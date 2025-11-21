@@ -1,0 +1,170 @@
+// Fetch the past year of hourly weather history for Stockton, CA using Open-Meteo archive
+// Usage: `node fetchStocktonWeather.js`
+// Note: Open-Meteo does not require an API key, but we still send a User-Agent.
+
+require("dotenv").config();
+const { MongoClient } = require("mongodb");
+
+const latitude = 37.8942;
+const longitude = -121.2389;
+const hoursBack = 24 * 1; // past 1 year of hourly data
+
+const baseUrl = "https://archive-api.open-meteo.com/v1/archive";
+const endDate = new Date();
+const startDate = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
+
+const mongoUri = process.env.MONGO_URI;
+const dbName = process.env.MONGO_DB;
+const collectionName = process.env.MONGO_COLLECTION;
+
+const formatDate = (d) => d.toISOString().slice(0, 10); // YYYY-MM-DD
+
+function buildUrl() {
+  const params = new URLSearchParams({
+    latitude: latitude.toString(),
+    longitude: longitude.toString(),
+    start_date: formatDate(startDate),
+    end_date: formatDate(endDate),
+    timezone: "America/Los_Angeles",
+    hourly: [
+      "temperature_2m",
+      "relative_humidity_2m",
+      "precipitation",
+      "wind_speed_10m",
+      "wind_gusts_10m",
+    ].join(","),
+    temperature_unit: "celsius",
+    windspeed_unit: "ms",
+    precipitation_unit: "mm",
+  });
+  return `${baseUrl}?${params.toString()}`;
+}
+
+async function fetchHourlyHistory() {
+  const url = buildUrl();
+  const response = await fetch(url, {
+    headers: {
+      "User-Agent": "StocktonWeatherData/1.0 Testing",
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `Request failed: ${response.status} ${response.statusText} – ${body.slice(
+        0,
+        500
+      )}`
+    );
+  }
+
+  const data = await response.json();
+  return { data, apiRequestId: null };
+}
+
+function toNumber(value, fallback = null) {
+  return typeof value === "number" ? value : fallback;
+}
+
+function combineHourly(data) {
+  const hourly = data.hourly || {};
+  const times = hourly.time || [];
+  const temps = hourly.temperature_2m || [];
+  const humidity = hourly.relative_humidity_2m || [];
+  const precipitation = hourly.precipitation || [];
+  const windSpeed = hourly.wind_speed_10m || [];
+  const windGust = hourly.wind_gusts_10m || [];
+
+  const observations = [];
+  for (let i = 0; i < times.length; i++) {
+    const temperatureC = toNumber(temps[i]);
+    const humidityPercent = toNumber(humidity[i]);
+    // treat missing precip/gust as 0 instead of null to avoid noisy nulls
+    const rainfallMm = toNumber(precipitation[i], 0);
+    const windSpeedMps = toNumber(windSpeed[i]);
+    const windGustMps = toNumber(windGust[i], 0);
+    observations.push({
+      timestamp: times[i],
+      temperatureC,
+      temperatureF: temperatureC == null ? null : temperatureC * (9 / 5) + 32,
+      humidityPercent,
+      rainfallMm,
+      windSpeedMps,
+      windGustMps,
+    });
+  }
+  return observations;
+}
+
+async function saveToMongo(observations, metadata) {
+  if (!mongoUri || !dbName || !collectionName) {
+    console.warn(
+      "Missing Mongo env vars (MONGO_URI, MONGO_DB, MONGO_COLLECTION); skipping insert."
+    );
+    return;
+  }
+
+  const client = new MongoClient(mongoUri);
+  try {
+    await client.connect();
+    const db = client.db(dbName);
+    const collection = db.collection(collectionName);
+
+    const docs = observations.map((obs) => ({
+      ...obs,
+      location: { latitude, longitude },
+      metadata,
+    }));
+
+    const result = await collection.insertMany(docs);
+    const inserted =
+      result.insertedCount ||
+      (result.insertedIds ? Object.keys(result.insertedIds).length : 0);
+    console.log(
+      `Inserted ${inserted} documents into ${dbName}.${collectionName}`
+    );
+  } finally {
+    await client.close();
+  }
+}
+
+async function main() {
+  try {
+    const { data, apiRequestId } = await fetchHourlyHistory();
+    const observations = combineHourly(data);
+
+    const metadata = {
+      source_timestamp: new Date().toISOString(),
+      source_database: "open-meteo.com/archive",
+      data_quality: "as-provided",
+      api_request_id: apiRequestId,
+      etl_batch_id: `etl-${Date.now()}`,
+    };
+
+    console.log(`Observation count: ${observations.length}`);
+
+    console.log(
+      JSON.stringify(
+        {
+          latitude,
+          longitude,
+          start: startDate.toISOString(),
+          end: endDate.toISOString(),
+          metadata,
+          count: observations.length,
+          // trim to a small preview to avoid dumping thousands of rows
+          sample: observations.slice(0, 3),
+        },
+        null,
+        2
+      )
+    );
+
+    await saveToMongo(observations, metadata);
+  } catch (err) {
+    console.error("Error", err);
+    process.exitCode = 1;
+  }
+}
+
+main();
