@@ -5,8 +5,10 @@
 require("dotenv").config();
 const { MongoClient } = require("mongodb");
 
-const latitude = 37.8942;
-const longitude = -121.2389;
+const city = "Stockton";
+const state = "CA";
+const latitude = 37.9575;
+const longitude = -121.2925;
 const hoursBack = 24 * 1; // past 1 year of hourly data
 
 const baseUrl = "https://archive-api.open-meteo.com/v1/archive";
@@ -15,7 +17,8 @@ const startDate = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
 
 const mongoUri = process.env.MONGO_URI;
 const dbName = process.env.MONGO_DB;
-const collectionName = process.env.MONGO_COLLECTION;
+const rawCollectionName = process.env.MONGO_COLLECTION_RAW;
+const enrichedCollectionName = process.env.MONGO_COLLECTION_ENRICHED;
 
 const formatDate = (d) => d.toISOString().slice(0, 10); // YYYY-MM-DD
 
@@ -96,10 +99,15 @@ function combineHourly(data) {
   return observations;
 }
 
-async function saveToMongo(observations, metadata) {
-  if (!mongoUri || !dbName || !collectionName) {
+async function saveRawAndEnriched(rawDoc, enrichedDocs) {
+  if (
+    !mongoUri ||
+    !dbName ||
+    !rawCollectionName ||
+    !enrichedCollectionName
+  ) {
     console.warn(
-      "Missing Mongo env vars (MONGO_URI, MONGO_DB, MONGO_COLLECTION); skipping insert."
+      "Missing Mongo env vars (MONGO_URI, MONGO_DB, MONGO_COLLECTION_RAW, MONGO_COLLECTION_ENRICHED); skipping DB inserts."
     );
     return;
   }
@@ -108,20 +116,24 @@ async function saveToMongo(observations, metadata) {
   try {
     await client.connect();
     const db = client.db(dbName);
-    const collection = db.collection(collectionName);
 
-    const docs = observations.map((obs) => ({
-      ...obs,
-      location: { latitude, longitude },
-      metadata,
-    }));
+    const rawResult = await db.collection(rawCollectionName).insertOne(rawDoc);
+    const enrichedResult = await db
+      .collection(enrichedCollectionName)
+      .insertMany(enrichedDocs);
 
-    const result = await collection.insertMany(docs);
-    const inserted =
-      result.insertedCount ||
-      (result.insertedIds ? Object.keys(result.insertedIds).length : 0);
+    const rawInserted = rawResult.insertedId ? 1 : 0;
+    const enrichedInserted =
+      enrichedResult.insertedCount ||
+      (enrichedResult.insertedIds
+        ? Object.keys(enrichedResult.insertedIds).length
+        : 0);
+
     console.log(
-      `Inserted ${inserted} documents into ${dbName}.${collectionName}`
+      `Inserted ${rawInserted} raw doc into ${dbName}.${rawCollectionName}`
+    );
+    console.log(
+      `Inserted ${enrichedInserted} enriched docs into ${dbName}.${enrichedCollectionName}`
     );
   } finally {
     await client.close();
@@ -139,6 +151,7 @@ async function main() {
       data_quality: "as-provided",
       api_request_id: apiRequestId,
       etl_batch_id: `etl-${Date.now()}`,
+      author : "Mannu, Darshana, Shradhha, Thai Khoa",
     };
 
     console.log(`Observation count: ${observations.length}`);
@@ -148,19 +161,39 @@ async function main() {
         {
           latitude,
           longitude,
+          city,
+          state,
           start: startDate.toISOString(),
           end: endDate.toISOString(),
           metadata,
           count: observations.length,
           // trim to a small preview to avoid dumping thousands of rows
-          sample: observations.slice(0, 3),
-        },
+      sample: observations.slice(0, 3),
+    },
         null,
         2
       )
     );
 
-    await saveToMongo(observations, metadata);
+    const rawDoc = {
+      latitude,
+      longitude,
+      start: startDate.toISOString(),
+      end: endDate.toISOString(),
+      fetched_at: new Date().toISOString(),
+      city,
+      state,
+      metadata,
+      payload: data,
+    };
+
+    const enrichedDocs = observations.map((obs) => ({
+      ...obs,
+      location: { city, state },
+      metadata,
+    }));
+
+    await saveRawAndEnriched(rawDoc, enrichedDocs);
   } catch (err) {
     console.error("Error", err);
     process.exitCode = 1;
