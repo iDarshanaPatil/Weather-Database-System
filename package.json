@@ -1,6 +1,25 @@
 {
   "dependencies": {
+    "@clickhouse/client": "^1.14.0",
     "dotenv": "^17.2.3",
     "mongodb": "^7.0.0"
-  }
+  },
+  "name": "weather-database-system",
+  "version": "1.0.0",
+  "description": "",
+  "main": "etlToClickHouse.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iDarshanaPatil/Weather-Database-System.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/iDarshanaPatil/Weather-Database-System/issues"
+  },
+  "homepage": "https://github.com/iDarshanaPatil/Weather-Database-System#readme"
 }
