@@ -84,6 +84,16 @@ async function incrementalSync() {
     return ts.replace("T", " ").replace("Z", "").split(".")[0];
   }
 
+  function gmtToClickHouseDateTime(gmtString) {
+    if (!gmtString) return null;
+
+    const d = new Date(gmtString);
+
+    if (isNaN(d.getTime())) return null;
+
+    return d.toISOString().replace("T", " ").replace("Z", "").split(".")[0];
+  }
+
   const nowCH = toCHDateTime(new Date().toISOString());
 
   const rows = docs.map((d) => ({
@@ -98,22 +108,19 @@ async function incrementalSync() {
     city: d.location.city,
     state: d.location.state,
 
-    // ---- SOURCE METADATA FIXED ----
-    source_timestamp: toCHDateTime(d.metadata?.source_timestamp),
+    source_timestamp: gmtToClickHouseDateTime(d.metadata?.source_timestamp),
     source_database: d.metadata?.source_database,
     data_quality: d.metadata?.data_quality,
     api_request_id: d.metadata?.api_request_id ?? "",
     etl_batch_id: d.metadata?.etl_batch_id,
     author: d.metadata?.author,
 
-    // ---- WAREHOUSE METADATA FIXED ----
-    warehouse_load_time: nowCH, // <- proper CH DateTime
+    warehouse_load_time: nowCH,
     rows_loaded: 1,
     sync_interval_min: 60,
     load_mode: "incremental",
   }));
 
-  // Insert into ClickHouse
   await ch.insert({
     table: "weather_dw.daily_weather",
     values: rows,
@@ -127,7 +134,6 @@ async function incrementalSync() {
 async function updateMonthlyAgg() {
   console.log("Updating monthly_agg analytics table...");
 
-  // Create monthly_agg table if it doesn't exist
   await ch.query({
     query: `
       CREATE TABLE IF NOT EXISTS weather_dw.monthly_agg
@@ -148,7 +154,6 @@ async function updateMonthlyAgg() {
     `,
   });
 
-  // Insert aggregated data
   await ch.query({
     query: `
       INSERT INTO weather_dw.monthly_agg
