@@ -278,7 +278,9 @@ async function updateCacheStatus() {
         
         const cacheStatusEl = document.getElementById('cacheStatus');
         if (status.cache_valid) {
-            const ttlPercent = status.ttl_seconds > 0 ? (status.ttl_seconds / 3600) : 0;
+            // Use refresh_interval_sec from metadata, or default to 3600 (1 hour)
+            const refreshInterval = status.metadata?.refresh_interval_sec || 3600;
+            const ttlPercent = status.ttl_seconds > 0 ? (status.ttl_seconds / refreshInterval) : 0;
             let syncText = 'Full Sync';
             let syncClass = 'active';
             
