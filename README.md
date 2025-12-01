@@ -96,11 +96,19 @@ Open: http://localhost:3000
 - Redis – Caches aggregated results for fast access
 - Dashboard – Visualizes temperature & rainfall trends with sync status
 
-## Known Limitations
-- Manual execution (no cron scheduling)
-- Single-city scope (Stockton only)
-- Basic error handling
-- No automatic schema migrations
+## Known Issues & Limitations
+
+The pipeline is currently run manually (no automated scheduling with cron).
+
+The system is designed for one city only (Stockton, CA).
+
+Redis caching uses a single cache key, not optimized for multiple regions.
+
+Error handling and logging are basic for academic demonstration.
+
+Schema changes require a manual reload of ClickHouse tables.
+
+The dashboard is intended for local use only, not production deployment.
 
 ## Project Status
 All stages complete:
