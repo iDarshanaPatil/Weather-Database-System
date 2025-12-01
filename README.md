@@ -134,7 +134,7 @@ API ✅ MongoDB ✅ ClickHouse ✅ Redis ✅ Dashboard ✅
 
 ## Team
 
-- Darshana Prafulla Patil
-- Thai Dang Khoa Tran
-- Manu Mathew Jiss
-- Shraddha Devendra Pujari
+- **Darshana Prafulla Patil**
+- **Thai Dang Khoa Tran**
+- **Manu Mathew Jiss**
+- **Shraddha Devendra Pujari**
