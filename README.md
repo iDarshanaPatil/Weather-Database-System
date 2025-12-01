@@ -49,6 +49,7 @@ Make sure you have installed:
 **git bash**
 
 git clone https://github.com/iDarshanaPatil/Weather-Database-System.git
+
 cd Weather-Database-System
 
 ### 3. Install Node.js Dependencies
@@ -59,7 +60,7 @@ Create your .env file in the root directory
 
 ## How to Run the Pipeline
 ### Step 1: API → MongoDB
-- node etlApiToMongo.js
+- node fetchStocktonWeather.js
 
 Stores raw and enriched data with source metadata.
 
@@ -67,8 +68,11 @@ Stores raw and enriched data with source metadata.
 - node etlToClickHouse.js
 
 Creates tables automatically
+
 Loads daily weather records
+
 Builds monthly aggregations
+
 Tracks warehouse metadata:
 - warehouse_load_time
 - rows_loaded
@@ -76,12 +80,12 @@ Tracks warehouse metadata:
 - load_mode (incremental)
 
 ### Step 3: ClickHouse → Redis
-- node etlClickhouseToRedis.js
+- node clickhouseToRedis.js
 
 Caches monthly aggregates with TTL.
 
 ### Step 4: Start Dashboard
-- node dashboardServer.js
+- node dashboard.js
 
 Open: http://localhost:3000
 
