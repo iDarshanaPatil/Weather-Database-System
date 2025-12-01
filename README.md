@@ -43,9 +43,8 @@ Make sure you have installed:
 - ClickHouse Server
 - Redis Server
 
----
-
 ### 2. Clone the Repository
+
 **git bash**
 
 git clone https://github.com/iDarshanaPatil/Weather-Database-System.git
@@ -53,18 +52,25 @@ git clone https://github.com/iDarshanaPatil/Weather-Database-System.git
 cd Weather-Database-System
 
 ### 3. Install Node.js Dependencies
+
 npm install
 
 ### 4. Environment Variables
+
 Create your .env file in the root directory
 
+---
+
 ## How to Run the Pipeline
+
 ### Step 1: API → MongoDB
+
 - node fetchStocktonWeather.js
 
 Stores raw and enriched data with source metadata.
 
 ### Step 2: MongoDB → ClickHouse
+
 - node etlToClickHouse.js
 
 Creates tables automatically
@@ -80,21 +86,28 @@ Tracks warehouse metadata:
 - load_mode (incremental)
 
 ### Step 3: ClickHouse → Redis
+
 - node clickhouseToRedis.js
 
 Caches monthly aggregates with TTL.
 
 ### Step 4: Start Dashboard
+
 - node dashboard.js
 
 Open: http://localhost:3000
 
+---
+
 ## Components (Brief)
+
 - API – Fetches historical Stockton weather data
 - MongoDB – Stores raw + enriched documents with source metadata
 - ClickHouse – Stores analytical tables and monthly aggregates
 - Redis – Caches aggregated results for fast access
 - Dashboard – Visualizes temperature & rainfall trends with sync status
+
+---
 
 ## Known Issues & Limitations
 
@@ -110,11 +123,17 @@ Schema changes require a manual reload of ClickHouse tables.
 
 The dashboard is intended for local use only, not production deployment.
 
+---
+
 ## Project Status
+
 All stages complete:
 API ✅ MongoDB ✅ ClickHouse ✅ Redis ✅ Dashboard ✅
 
+---
+
 ## Team
+
 - Darshana Prafulla Patil
 - Thai Dang Khoa Tran
 - Manu Mathew Jiss
