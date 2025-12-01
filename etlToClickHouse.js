@@ -71,7 +71,7 @@ async function incrementalSync() {
   console.log(`Connected to DB: ${MONGO_DB}`);
   console.log(`Using collection: ${MONGO_COLLECTION_ENRICHED}`);
 
-  const docs = await enriched.find({}).toArray();
+  const docs = await enriched.find({"metadata.author":"Mannu, Darshana, Shradhha, Thai Khoa"}).toArray();
   console.log(`Loaded ${docs.length} MongoDB documents`);
 
   if (docs.length === 0) {
