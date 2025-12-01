@@ -9,13 +9,13 @@ The pipeline also tracks **full ETL metadata at every stage** for traceability a
 
 ## Pipeline Architecture
 Weather API
-↓
+→
 MongoDB (Raw + Enriched Data)
-↓
+→
 ClickHouse (Data Warehouse + Aggregations)
-↓
+→
 Redis (Cache with TTL)
-↓
+→
 Local Dashboard (Charts + Sync Status)
 
 
@@ -47,6 +47,7 @@ Make sure you have installed:
 
 ### 2. Clone the Repository
 **git bash**
+
 git clone https://github.com/iDarshanaPatil/Weather-Database-System.git
 cd Weather-Database-System
 
@@ -58,51 +59,51 @@ Create your .env file in the root directory
 
 ## How to Run the Pipeline
 ### Step 1: API → MongoDB
-node etlApiToMongo.js
+- node etlApiToMongo.js
 
 Stores raw and enriched data with source metadata.
 
 ### Step 2: MongoDB → ClickHouse
-node etlToClickHouse.js
+- node etlToClickHouse.js
 
 Creates tables automatically
 Loads daily weather records
 Builds monthly aggregations
 Tracks warehouse metadata:
-    warehouse_load_time
-    rows_loaded
-    sync_interval_min
-    load_mode (incremental)
+- warehouse_load_time
+- rows_loaded
+- sync_interval_min
+- load_mode (incremental)
 
 ### Step 3: ClickHouse → Redis
-node etlClickhouseToRedis.js
+- node etlClickhouseToRedis.js
 
 Caches monthly aggregates with TTL.
 
 ### Step 4: Start Dashboard
-node dashboardServer.js
+- node dashboardServer.js
 
 Open: http://localhost:3000
 
 ## Components (Brief)
-API – Fetches historical Stockton weather data
-MongoDB – Stores raw + enriched documents with source metadata
-ClickHouse – Stores analytical tables and monthly aggregates
-Redis – Caches aggregated results for fast access
-Dashboard – Visualizes temperature & rainfall trends with sync status
+- API – Fetches historical Stockton weather data
+- MongoDB – Stores raw + enriched documents with source metadata
+- ClickHouse – Stores analytical tables and monthly aggregates
+- Redis – Caches aggregated results for fast access
+- Dashboard – Visualizes temperature & rainfall trends with sync status
 
 ## Known Limitations
-Manual execution (no cron scheduling)
-Single-city scope (Stockton only)
-Basic error handling
-No automatic schema migrations
+- Manual execution (no cron scheduling)
+- Single-city scope (Stockton only)
+- Basic error handling
+- No automatic schema migrations
 
 ## Project Status
 All stages complete:
 API ✅ MongoDB ✅ ClickHouse ✅ Redis ✅ Dashboard ✅
 
 ## Team
-Darshana Prafulla Patil
-Thai Dang Khoa Tran
-Manu Mathew Jiss
-Shraddha Devendra Pujari
+- Darshana Prafulla Patil
+- Thai Dang Khoa Tran
+- Manu Mathew Jiss
+- Shraddha Devendra Pujari
