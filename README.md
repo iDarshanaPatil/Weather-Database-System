@@ -132,9 +132,9 @@ API ✅ MongoDB ✅ ClickHouse ✅ Redis ✅ Dashboard ✅
 
 ---
 
-## Team
+## Team - DaSh-MaTh
 
 - **Darshana Prafulla Patil**
 - **Thai Dang Khoa Tran**
 - **Manu Mathew Jiss**
-- **Shraddha Devendra Pujari**
+- **Shradha Devendra Pujari**
