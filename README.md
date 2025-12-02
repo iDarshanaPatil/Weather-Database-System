@@ -93,7 +93,7 @@ Caches monthly aggregates with TTL.
 
 ### Step 4: Start Dashboard
 
-- node dashboard.js
+- node server.js
 
 Open: http://localhost:3000
 
